@@ -154,15 +154,13 @@ export default function UpdateBadge({ baseUrl, apiKey }: Props) {
                 color: "#475569", fontSize: "13px", lineHeight: "1.7",
               }}>
                 <div style={{ color: "#64748b", fontWeight: 600, marginBottom: "6px", fontSize: "12px" }}>未启用自动更新</div>
-                如需获取新版本推送，请通过 Replit Agent 设置 Secret：
+                如需接收新版本推送，请通过 Replit Agent 设置 Secret：
                 <code style={{ display: "block", marginTop: "8px", padding: "8px 10px", borderRadius: "6px",
                   background: "rgba(0,0,0,0.3)", color: "#94a3b8", fontSize: "11.5px", wordBreak: "break-all" }}>
-                  {info.upstreamUrl
-                    ? `UPDATE_CHECK_URL = ${info.upstreamUrl}/api/update/version`
-                    : "UPDATE_CHECK_URL = 上游部署地址/api/update/version"}
+                  UPDATE_CHECK_URL = https://raw.githubusercontent.com/Akatsuki03/Replit2Api/main/version.json
                 </code>
                 <div style={{ color: "#475569", fontSize: "12px", marginTop: "8px" }}>
-                  更新包直接从上游 Replit 项目下载，无需 GitHub。
+                  设置后，更新包将直接从 GitHub 仓库拉取，无需依赖上游 Replit 实例在线。
                 </div>
               </div>
             )}
