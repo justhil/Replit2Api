@@ -2,5 +2,5 @@
   "version": "1.0.9",
   "name": "AI Proxy Gateway",
   "releaseDate": "2026-04-06",
-  "releaseNotes": "v1.0.9 — Update via copy-to-Agent prompt; stats refresh button fix; improved error messages"
+  "releaseNotes": "v1.0.9 — Setup wizard only auto-shows when not yet configured; update via copy-to-Agent prompt; stats refresh fix; better error messages"
 }

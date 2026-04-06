@@ -261,6 +261,7 @@ function PageHome({
               version: "v1.0.9",
               date: "2026-04-06",
               items: [
+                { zh: "配置助手弹窗逻辑修复：改为查询服务器是否已设置 PROXY_API_KEY，只在未完成初始化时才自动弹出；配置完成后无论换浏览器或清缓存均不再弹出", en: "Setup wizard no longer auto-pops on every load; now queries server setup status — only shows when PROXY_API_KEY is not yet configured" },
                 { zh: "更新方式改为「复制提示词给 Replit Agent」：点击版本徽标→「复制提示词」→粘贴到 Replit AI 对话框，由 Agent 自动拉取最新代码并重启", en: "Update flow changed to 'Copy prompt for Replit Agent': click version badge → copy prompt → paste in Replit AI chat; Agent handles pull + restart" },
                 { zh: "修复用量统计「刷新」按钮被上方元素遮挡无法点击的问题（去除 marginTop: -16px）", en: "Fix: stats refresh button was overlapped and unclickable due to negative margin; now properly positioned" },
                 { zh: "统计加载失败时区分错误类型：服务器未配置 PROXY_API_KEY（500）vs API Key 不正确（401），显示针对性提示", en: "Stats error messages now differentiate: 'PROXY_API_KEY not configured' (500) vs 'API Key mismatch' (401)" },
@@ -1557,7 +1558,7 @@ export default function App() {
   const [sillyTavernMode, setSillyTavernMode] = useState(false);
   const [stLoading, setStLoading] = useState(true);
   const [apiKey, setApiKey] = useState(() => localStorage.getItem("proxy_api_key") ?? "");
-  const [showWizard, setShowWizard] = useState(() => !localStorage.getItem("proxy_api_key"));
+  const [showWizard, setShowWizard] = useState(false);
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
     openai: false, anthropic: false, gemini: false, openrouter: false,
   });
@@ -1732,6 +1733,20 @@ export default function App() {
     return () => { clearInterval(iv1); clearInterval(iv2); };
   }, [checkHealth, fetchSTMode, fetchStats, fetchModels, apiKey]);
 
+  // Auto-show wizard only when server is NOT configured yet.
+  // Once PROXY_API_KEY is set server-side, wizard never pops up automatically.
+  // Uses sessionStorage so a manual dismiss stays dismissed for this tab's lifetime.
+  useEffect(() => {
+    if (sessionStorage.getItem("wizard_dismissed") === "1") return;
+    fetch(`${baseUrl}/api/setup-status`)
+      .then((r) => r.ok ? r.json() : null)
+      .then((status: { configured: boolean } | null) => {
+        if (!status || status.configured) return;
+        setShowWizard(true);
+      })
+      .catch(() => {});
+  }, [baseUrl]);
+
   const TABS: { id: Tab; label: string }[] = [
     { id: "home", label: "首页" },
     { id: "stats", label: "统计 & 节点" },
@@ -1742,7 +1757,11 @@ export default function App() {
   return (
     <div style={{ minHeight: "100vh", background: "hsl(222,47%,11%)", color: "#e2e8f0", fontFamily: "'Inter', -apple-system, sans-serif" }}>
       {showWizard && (
-        <SetupWizard baseUrl={baseUrl} onComplete={() => setShowWizard(false)} onDismiss={() => setShowWizard(false)} />
+        <SetupWizard
+          baseUrl={baseUrl}
+          onComplete={() => { sessionStorage.setItem("wizard_dismissed", "1"); setShowWizard(false); }}
+          onDismiss={() => { sessionStorage.setItem("wizard_dismissed", "1"); setShowWizard(false); }}
+        />
       )}
 
       <UpdateBar baseUrl={baseUrl} apiKey={apiKey} />
