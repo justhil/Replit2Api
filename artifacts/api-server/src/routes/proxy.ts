@@ -176,6 +176,26 @@ function getFriendProxyConfigs(): { label: string; url: string; apiKey: string }
   return configs;
 }
 
+// getAllFriendProxyConfigs — 返回全部节点（含禁用的），专供统计页面使用
+function getAllFriendProxyConfigs(): { label: string; url: string; apiKey: string; enabled: boolean }[] {
+  const apiKey = process.env.PROXY_API_KEY ?? "";
+  const configs: { label: string; url: string; apiKey: string; enabled: boolean }[] = [];
+
+  const envKeys = ["FRIEND_PROXY_URL", ...Array.from({ length: 19 }, (_, i) => `FRIEND_PROXY_URL_${i + 2}`)];
+  for (const key of envKeys) {
+    const raw = process.env[key];
+    if (raw) configs.push({ label: key.replace("FRIEND_PROXY_URL", "FRIEND"), url: normalizeSubNodeUrl(raw), apiKey, enabled: true });
+  }
+
+  const knownUrls = new Set(configs.map((c) => c.url));
+  for (const d of dynamicBackends) {
+    const url = normalizeSubNodeUrl(d.url);
+    if (!knownUrls.has(url)) configs.push({ label: d.label, url, apiKey, enabled: d.enabled !== false });
+  }
+
+  return configs;
+}
+
 async function probeHealth(url: string, apiKey: string): Promise<boolean> {
   try {
     const controller = new AbortController();
@@ -673,7 +693,7 @@ router.post("/v1/messages", requireApiKey, async (req: Request, res: Response) =
 });
 
 router.get("/v1/stats", requireApiKey, (_req: Request, res: Response) => {
-  const allConfigs = getFriendProxyConfigs();
+  const allConfigs = getAllFriendProxyConfigs();
   const allLabels = ["local", ...allConfigs.map((c) => c.label)];
   const result: Record<string, unknown> = {};
   for (const label of allLabels) {
@@ -690,7 +710,7 @@ router.get("/v1/stats", requireApiKey, (_req: Request, res: Response) => {
       health: label === "local" ? "healthy" : getCachedHealth(cfg?.url ?? "") === false ? "down" : "healthy",
       url: label === "local" ? null : cfg?.url ?? null,
       dynamic: dynamicBackends.some((d) => d.label === label),
-      enabled: (() => { const d = dynamicBackends.find((x) => x.label === label); return d ? d.enabled !== false : true; })(),
+      enabled: cfg ? cfg.enabled : true,
     };
   }
   res.json({ stats: result, uptimeSeconds: Math.round(process.uptime()) });

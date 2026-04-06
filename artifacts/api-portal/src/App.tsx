@@ -507,15 +507,26 @@ function PageStats({
 
             {/* Per-backend rows */}
             <div style={{ display: "flex", flexDirection: "column", gap: "6px" }}>
-              {Object.entries(stats).map(([label, s]) => (
+              {Object.entries(stats).map(([label, s]) => {
+                const isEnabled = s.enabled !== false;
+                const isHealthy = s.health === "healthy";
+                return (
                 <div key={label} style={{
-                  background: "rgba(0,0,0,0.2)", border: "1px solid rgba(255,255,255,0.06)",
+                  background: isEnabled ? "rgba(0,0,0,0.2)" : "rgba(0,0,0,0.35)",
+                  border: `1px solid ${isEnabled ? "rgba(255,255,255,0.06)" : "rgba(248,113,113,0.15)"}`,
                   borderRadius: "8px", padding: "12px 14px",
+                  opacity: isEnabled ? 1 : 0.65,
                 }}>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px" }}>
-                    <div style={{ width: "7px", height: "7px", borderRadius: "50%", background: s.health === "healthy" ? "#4ade80" : "#f87171", boxShadow: s.health === "healthy" ? "0 0 5px #4ade80" : undefined, flexShrink: 0 }} />
-                    <span style={{ fontSize: "13px", fontWeight: 600, color: "#94a3b8", fontFamily: "Menlo, monospace" }}>{label}</span>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", flexWrap: "wrap" }}>
+                    <div style={{
+                      width: "7px", height: "7px", borderRadius: "50%",
+                      background: !isEnabled ? "#64748b" : isHealthy ? "#4ade80" : "#f87171",
+                      boxShadow: (isEnabled && isHealthy) ? "0 0 5px #4ade80" : undefined,
+                      flexShrink: 0,
+                    }} />
+                    <span style={{ fontSize: "13px", fontWeight: 600, color: isEnabled ? "#94a3b8" : "#475569", fontFamily: "Menlo, monospace" }}>{label}</span>
                     {s.dynamic && <span style={{ fontSize: "10px", color: "#a78bfa", background: "rgba(167,139,250,0.15)", border: "1px solid rgba(167,139,250,0.3)", borderRadius: "4px", padding: "1px 5px" }}>动态</span>}
+                    {!isEnabled && <span style={{ fontSize: "10px", color: "#f87171", background: "rgba(248,113,113,0.1)", border: "1px solid rgba(248,113,113,0.25)", borderRadius: "4px", padding: "1px 5px" }}>已禁用</span>}
                     {s.url && <span style={{ fontSize: "11px", color: "#334155", fontFamily: "Menlo, monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap", flex: 1 }}>{s.url}</span>}
                   </div>
                   <div style={{ display: "flex", gap: "16px", flexWrap: "wrap" }}>
@@ -535,7 +546,8 @@ function PageStats({
                     ))}
                   </div>
                 </div>
-              ))}
+                );
+              })}
             </div>
           </>
         )}
