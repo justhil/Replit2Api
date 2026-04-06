@@ -24,6 +24,24 @@ interface Action {
   primary?: boolean;
 }
 
+const SETUP_PROMPT = `请帮我完成 AI Proxy Node 的初始配置，严格按以下步骤执行：
+
+【绝对禁止】不得向我索取 OpenAI API Key 或 Anthropic API Key，这两项由 Replit 平台通过 AI Integrations 自动提供，用户无需拥有也无需填写任何第三方密钥。
+
+步骤 1：添加 Secret — PROXY_API_KEY
+   这是 AI Proxy Node 自定义的访问密钥，由我自己指定（任意字符串均可）。
+   请通过 Replit Secrets 面板帮我添加 PROXY_API_KEY，并提示我输入想要设置的值。
+
+步骤 2：添加 Replit AI Integrations（通过左侧边栏 Integrations 面板）
+   【重要】这是 Replit 平台内置功能，完全不需要我提供 OpenAI 或 Anthropic 的 API Key。
+   请直接在 Integrations 面板中操作，不要向我索取任何第三方 API Key。
+   - OpenAI Integration：在 Integrations 面板搜索 "OpenAI" 并添加。
+     添加后 Replit 平台会自动注入 AI_INTEGRATIONS_OPENAI_API_KEY 和 AI_INTEGRATIONS_OPENAI_BASE_URL，无需任何额外操作。
+   - Anthropic Integration：在 Integrations 面板搜索 "Anthropic" 并添加。
+     添加后 Replit 平台会自动注入 AI_INTEGRATIONS_ANTHROPIC_API_KEY 和 AI_INTEGRATIONS_ANTHROPIC_BASE_URL，无需任何额外操作。
+
+完成后告知我，我将点击门户中的"已重启，重新检测"按钮验证配置。`;
+
 let msgId = 0;
 const makeMsg = (
   from: Message["from"],
@@ -61,6 +79,7 @@ function CopyableBlock({ text }: { text: string }) {
           fontSize: "13px",
           fontFamily: "Menlo, monospace",
           lineHeight: "1.5",
+          whiteSpace: "pre-wrap",
           userSelect: "all",
         }}
       >
@@ -165,21 +184,12 @@ export default function SetupWizard({ baseUrl, onComplete, onDismiss }: Props) {
         },
         300
       );
-    } else if (!status.integrationsReady) {
-      addAgent(
-        "AI 集成还未初始化。请复制下方指令发给 Replit Agent：",
-        {
-          copyBlocks: [{ text: "请帮我添加 OpenAI 和 Anthropic 的 AI 集成，然后重启项目" }],
-          actions: [{ label: "Agent 已完成，再次检测", value: "check", primary: true }],
-        },
-        300
-      );
     } else {
       addAgent(
-        "AI 集成已就绪，但还没检测到 PROXY_API_KEY。密钥保存后需要重启项目才能生效。\n\n请复制下方指令发给 Replit Agent：",
+        "配置还未完成。请将下方指令复制发给 Replit Agent，它会帮你一次性完成全部配置：",
         {
-          copyBlocks: [{ text: "请帮我重启项目" }],
-          actions: [{ label: "已重启，再次检测", value: "check", primary: true }],
+          copyBlocks: [{ text: SETUP_PROMPT }],
+          actions: [{ label: "已重启，重新检测", value: "check", primary: true }],
         },
         300
       );
@@ -193,60 +203,11 @@ export default function SetupWizard({ baseUrl, onComplete, onDismiss }: Props) {
       if (value === "start") {
         addUser(label);
         addAgent(
-          "第一步：初始化 AI 集成（OpenAI + Anthropic）。\n\n打开 Replit 编辑器的 AI 对话框，复制下方指令发送给 Agent：",
+          "请将下方指令完整复制，发送给 Replit Agent。它会帮你一次性完成所有配置并重启服务器：",
           {
-            copyBlocks: [
-              { text: "请帮我添加 OpenAI 和 Anthropic 的 AI 集成" },
-            ],
+            copyBlocks: [{ text: SETUP_PROMPT }],
             actions: [
-              { label: "Agent 已完成 ✓", value: "integrations_done", primary: true },
-              { label: "找不到 AI 对话框", value: "help_find" },
-            ],
-          }
-        );
-        return;
-      }
-
-      if (value === "help_find") {
-        addUser(label);
-        addAgent(
-          "Replit 编辑器右侧有一个聊天图标，点开就是 AI 对话框。\n\n如果你看到的是这个预览页面，请切换回编辑器标签页，找到 Agent 对话框后复制下方指令：",
-          {
-            copyBlocks: [
-              { text: "请帮我添加 OpenAI 和 Anthropic 的 AI 集成" },
-            ],
-            actions: [
-              { label: "Agent 已完成 ✓", value: "integrations_done", primary: true },
-            ],
-          }
-        );
-        return;
-      }
-
-      if (value === "integrations_done") {
-        addUser(label);
-        addAgent(
-          "第二步：设置访问密码（PROXY_API_KEY）。\n\n复制下方指令发给 Agent，它会帮你安全存储密码：",
-          {
-            copyBlocks: [
-              { text: "请帮我设置 PROXY_API_KEY Secret，用于访问认证" },
-            ],
-            actions: [
-              { label: "Agent 已设置完成 ✓", value: "set_done", primary: true },
-            ],
-          }
-        );
-        return;
-      }
-
-      if (value === "set_done") {
-        addUser(label);
-        addAgent(
-          "密码已安全存入 Replit Secrets。\n\n最后一步：重启项目让服务器读取新配置：",
-          {
-            copyBlocks: [{ text: "请帮我重启项目" }],
-            actions: [
-              { label: "Agent 已重启 ✓，检测一下", value: "check", primary: true },
+              { label: "已重启，检测一下", value: "check", primary: true },
             ],
           }
         );
