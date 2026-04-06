@@ -255,76 +255,111 @@ function PageHome({
           <span style={{ fontSize: "15px" }}>📋</span>
           <SectionTitle>更新日志 · Changelog</SectionTitle>
         </div>
-        {[
-          {
-            version: "v1.0.7",
-            date: "2026-04-06",
-            items: [
-              { zh: "修复子节点 / 禁用模型数据 publish 后丢失：改用 Replit 云端对象存储（GCS）持久化，重新部署不再清空", en: "Fix: dynamic backends and disabled models now persisted to GCS — data survives redeploys" },
-              { zh: "修复「重新检测」按钮在错误状态下不可点击的问题；点击后显示 loading 旋转和完成提示", en: "Fix: 'Re-check' button is now always clickable even after an error; shows spinner and completion feedback" },
-              { zh: "修复「检测更新」弹窗按钮在 error 状态重置流程；新增无更新时「已是最新版本」提示", en: "Fix update modal error-state reset flow; show 'Already up to date' notice when no update is available" },
-              { zh: "统计页面：/v1/stats 现在包含全部后端节点（含禁用的），禁用节点以红色边框 + 「已禁用」标签区分", en: "Stats page: /v1/stats now includes all backends including disabled ones; disabled rows show red border + badge" },
-            ],
-          },
-          {
-            version: "v1.0.6",
-            date: "2026-04-06",
-            items: [
-              { zh: "新增「模型管理」标签页：支持按组一键全部启用/禁用，或逐条切换每个模型的开关状态", en: "New 'Model Management' tab: group-level one-click enable/disable and per-model toggle switches" },
-              { zh: "禁用的模型从 /v1/models 响应中过滤，调用时返回 403 错误（model_disabled）", en: "Disabled models are filtered from /v1/models and return 403 (model_disabled) when called" },
-              { zh: "状态持久化到 disabled_models.json，重启后保留设置", en: "State persisted to disabled_models.json, survives server restarts" },
-              { zh: "「立即更新」按钮恢复：一键从 GitHub 拉取最新代码 + 自动重启", en: "Restored one-click update button: pulls latest code from GitHub and auto-restarts" },
-            ],
-          },
-          {
-            version: "v1.0.5",
-            date: "2026-04-06",
-            items: [
-              { zh: "配置助手重写：单步模式，一条指令完成所有初始化（Secret + AI Integrations + 重启），明确禁止 Agent 索取第三方 API Key", en: "SetupWizard rewrite: single-step prompt covers all init (Secret + AI Integrations + restart); forbids Agent from asking for third-party API keys" },
-              { zh: "版本比较修复：正确处理预发布后缀（a/b/rc1 等），stable > 同号 pre-release", en: "Version comparison fix: correctly handles pre-release suffixes (a/b/rc1…); stable > same-number pre-release" },
-              { zh: "子节点 URL 自动补全 /api 后缀（服务端路由层 + 前端统计页）", en: "Sub-node URL auto-normalization: auto-appends /api suffix in server routing and frontend Stats page" },
-              { zh: "X-Proxy-Version header 修复：过滤非 ASCII 字符，彻底解决 ERR_INVALID_CHAR 崩溃", en: "X-Proxy-Version header fix: strip non-ASCII chars, eliminating ERR_INVALID_CHAR crash" },
-              { zh: "后端批量管理：多选批量启用 / 禁用 / 删除", en: "Batch backend management: multi-select for bulk enable / disable / remove" },
-            ],
-          },
-          {
-            version: "v1.0.1",
-            date: "2026-04-06",
-            items: [
-              { zh: "完整 tool calling 支持 — Claude、Gemini 自动格式互转（tool_use / functionDeclarations）", en: "Full tool calling support — auto-conversion for Claude (tool_use) and Gemini (functionDeclarations)" },
-              { zh: "Claude 流式工具调用：input_json_delta 逐块转发，finish_reason 正确映射为 tool_calls", en: "Claude streaming tool calls: input_json_delta forwarded chunk-by-chunk with correct tool_calls finish_reason" },
-              { zh: "前端三栏重构：首页 / 统计 & 节点 / 端点文档，布局更清晰", en: "Frontend redesigned into 3-tab layout: Home / Stats & Nodes / API Docs" },
-              { zh: "新增 Fleet Manager — 子节点批量版本检测与一键更新", en: "New Fleet Manager — batch version check and one-click update for sub-nodes" },
-            ],
-          },
-          {
-            version: "v1.0.0",
-            date: "2026-04-06",
-            items: [
-              { zh: "正式版发布 — 统一接入 OpenAI / Anthropic / Gemini / OpenRouter 四大后端", en: "Initial release — unified gateway for OpenAI / Anthropic / Gemini / OpenRouter" },
-              { zh: "支持 SillyTavern 兼容模式、CherryStudio 接入、多种认证方式", en: "SillyTavern compatibility mode, CherryStudio integration, multiple auth methods" },
-              { zh: "Replit 文件包热更新机制（无需 GitHub，跨实例推送）", en: "Replit file-bundle hot-update system (no GitHub required, cross-instance push)" },
-            ],
-          },
-        ].map((release) => (
-          <div key={release.version} style={{ marginBottom: "16px" }}>
-            <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
-              <span style={{ fontFamily: "Menlo, monospace", fontSize: "13px", fontWeight: 700, color: "#a5b4fc" }}>{release.version}</span>
-              <span style={{ fontSize: "11px", color: "#334155" }}>{release.date}</span>
-            </div>
-            <div style={{ display: "flex", flexDirection: "column", gap: "5px", paddingLeft: "4px" }}>
-              {release.items.map((item, i) => (
-                <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
-                  <span style={{ color: "#4f46e5", marginTop: "2px", flexShrink: 0, fontSize: "11px" }}>▸</span>
-                  <div>
-                    <div style={{ fontSize: "12.5px", color: "#94a3b8", lineHeight: "1.5" }}>{item.zh}</div>
-                    <div style={{ fontSize: "11px", color: "#334155", lineHeight: "1.5", fontStyle: "italic" }}>{item.en}</div>
+        {(() => {
+          const releases = [
+            {
+              version: "v1.0.8",
+              date: "2026-04-06",
+              items: [
+                { zh: "节点管理：全选 / 多选现在覆盖所有子节点（含 ENV 节点），批量启用 / 禁用 / 移除；ENV 节点无移除按钮", en: "Node management: select-all / multi-select now covers all sub-nodes (incl. ENV nodes); batch enable / disable / remove; ENV nodes have no remove button" },
+                { zh: "更新日志加入滚动：仅展示最新 2 条，历史记录通过滚动查看", en: "Changelog scrollable: only 2 latest entries shown by default; scroll to view history" },
+                { zh: "配置助手第 3 步：开通 App Storage，fork 用户的子节点配置 publish 后不再丢失", en: "Setup wizard step 3: provision App Storage so fork users' sub-node configs survive redeploys" },
+              ],
+            },
+            {
+              version: "v1.0.7",
+              date: "2026-04-06",
+              items: [
+                { zh: "修复子节点 / 禁用模型数据 publish 后丢失：改用 Replit 云端对象存储（GCS）持久化，重新部署不再清空", en: "Fix: dynamic backends and disabled models now persisted to GCS — data survives redeploys" },
+                { zh: "修复「重新检测」按钮在错误状态下不可点击的问题；点击后显示 loading 旋转和完成提示", en: "Fix: 'Re-check' button is now always clickable even after an error; shows spinner and completion feedback" },
+                { zh: "修复「检测更新」弹窗按钮在 error 状态重置流程；新增无更新时「已是最新版本」提示", en: "Fix update modal error-state reset flow; show 'Already up to date' notice when no update is available" },
+                { zh: "统计页面：/v1/stats 现在包含全部后端节点（含禁用的），禁用节点以红色边框 + 「已禁用」标签区分", en: "Stats page: /v1/stats now includes all backends including disabled ones; disabled rows show red border + badge" },
+              ],
+            },
+            {
+              version: "v1.0.6",
+              date: "2026-04-06",
+              items: [
+                { zh: "新增「模型管理」标签页：支持按组一键全部启用/禁用，或逐条切换每个模型的开关状态", en: "New 'Model Management' tab: group-level one-click enable/disable and per-model toggle switches" },
+                { zh: "禁用的模型从 /v1/models 响应中过滤，调用时返回 403 错误（model_disabled）", en: "Disabled models are filtered from /v1/models and return 403 (model_disabled) when called" },
+                { zh: "状态持久化到 disabled_models.json，重启后保留设置", en: "State persisted to disabled_models.json, survives server restarts" },
+                { zh: "「立即更新」按钮恢复：一键从 GitHub 拉取最新代码 + 自动重启", en: "Restored one-click update button: pulls latest code from GitHub and auto-restarts" },
+              ],
+            },
+            {
+              version: "v1.0.5",
+              date: "2026-04-06",
+              items: [
+                { zh: "配置助手重写：单步模式，一条指令完成所有初始化（Secret + AI Integrations + 重启），明确禁止 Agent 索取第三方 API Key", en: "SetupWizard rewrite: single-step prompt covers all init (Secret + AI Integrations + restart); forbids Agent from asking for third-party API keys" },
+                { zh: "版本比较修复：正确处理预发布后缀（a/b/rc1 等），stable > 同号 pre-release", en: "Version comparison fix: correctly handles pre-release suffixes (a/b/rc1…); stable > same-number pre-release" },
+                { zh: "子节点 URL 自动补全 /api 后缀（服务端路由层 + 前端统计页）", en: "Sub-node URL auto-normalization: auto-appends /api suffix in server routing and frontend Stats page" },
+                { zh: "X-Proxy-Version header 修复：过滤非 ASCII 字符，彻底解决 ERR_INVALID_CHAR 崩溃", en: "X-Proxy-Version header fix: strip non-ASCII chars, eliminating ERR_INVALID_CHAR crash" },
+                { zh: "后端批量管理：多选批量启用 / 禁用 / 删除", en: "Batch backend management: multi-select for bulk enable / disable / remove" },
+              ],
+            },
+            {
+              version: "v1.0.1",
+              date: "2026-04-06",
+              items: [
+                { zh: "完整 tool calling 支持 — Claude、Gemini 自动格式互转（tool_use / functionDeclarations）", en: "Full tool calling support — auto-conversion for Claude (tool_use) and Gemini (functionDeclarations)" },
+                { zh: "Claude 流式工具调用：input_json_delta 逐块转发，finish_reason 正确映射为 tool_calls", en: "Claude streaming tool calls: input_json_delta forwarded chunk-by-chunk with correct tool_calls finish_reason" },
+                { zh: "前端三栏重构：首页 / 统计 & 节点 / 端点文档，布局更清晰", en: "Frontend redesigned into 3-tab layout: Home / Stats & Nodes / API Docs" },
+                { zh: "新增 Fleet Manager — 子节点批量版本检测与一键更新", en: "New Fleet Manager — batch version check and one-click update for sub-nodes" },
+              ],
+            },
+            {
+              version: "v1.0.0",
+              date: "2026-04-06",
+              items: [
+                { zh: "正式版发布 — 统一接入 OpenAI / Anthropic / Gemini / OpenRouter 四大后端", en: "Initial release — unified gateway for OpenAI / Anthropic / Gemini / OpenRouter" },
+                { zh: "支持 SillyTavern 兼容模式、CherryStudio 接入、多种认证方式", en: "SillyTavern compatibility mode, CherryStudio integration, multiple auth methods" },
+                { zh: "Replit 文件包热更新机制（无需 GitHub，跨实例推送）", en: "Replit file-bundle hot-update system (no GitHub required, cross-instance push)" },
+              ],
+            },
+          ];
+
+          const renderRelease = (release: typeof releases[0]) => (
+            <div key={release.version} style={{ marginBottom: "16px" }}>
+              <div style={{ display: "flex", alignItems: "center", gap: "10px", marginBottom: "8px" }}>
+                <span style={{ fontFamily: "Menlo, monospace", fontSize: "13px", fontWeight: 700, color: "#a5b4fc" }}>{release.version}</span>
+                <span style={{ fontSize: "11px", color: "#334155" }}>{release.date}</span>
+              </div>
+              <div style={{ display: "flex", flexDirection: "column", gap: "5px", paddingLeft: "4px" }}>
+                {release.items.map((item, i) => (
+                  <div key={i} style={{ display: "flex", gap: "8px", alignItems: "flex-start" }}>
+                    <span style={{ color: "#4f46e5", marginTop: "2px", flexShrink: 0, fontSize: "11px" }}>▸</span>
+                    <div>
+                      <div style={{ fontSize: "12.5px", color: "#94a3b8", lineHeight: "1.5" }}>{item.zh}</div>
+                      <div style={{ fontSize: "11px", color: "#334155", lineHeight: "1.5", fontStyle: "italic" }}>{item.en}</div>
+                    </div>
                   </div>
-                </div>
-              ))}
+                ))}
+              </div>
             </div>
-          </div>
-        ))}
+          );
+
+          const VISIBLE = 2;
+          const visible = releases.slice(0, VISIBLE);
+          const older = releases.slice(VISIBLE);
+
+          return (
+            <>
+              {visible.map(renderRelease)}
+              {older.length > 0 && (
+                <>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", margin: "4px 0 12px" }}>
+                    <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.05)" }} />
+                    <span style={{ fontSize: "10.5px", color: "#334155" }}>历史版本（向下滚动）</span>
+                    <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.05)" }} />
+                  </div>
+                  <div style={{ maxHeight: "260px", overflowY: "auto", paddingRight: "4px" }}>
+                    {older.map(renderRelease)}
+                  </div>
+                </>
+              )}
+            </>
+          );
+        })()}
       </Card>
 
       {/* Feature Cards */}
@@ -457,18 +492,20 @@ function PageStats({
   const _ = baseUrl; // used by parent
   const [selected, setSelected] = useState<Set<string>>(new Set());
 
-  const dynamicNodes = stats
-    ? Object.entries(stats).filter(([, s]) => s.dynamic)
+  // All sub-nodes (everything except "local")
+  const allSubNodes = stats
+    ? Object.entries(stats).filter(([l]) => l !== "local")
     : [];
+  const dynamicNodes = allSubNodes.filter(([, s]) => s.dynamic);
 
-  const allSelected = dynamicNodes.length > 0 && dynamicNodes.every(([l]) => selected.has(l));
+  const allSelected = allSubNodes.length > 0 && allSubNodes.every(([l]) => selected.has(l));
   const someSelected = selected.size > 0;
 
   const toggleSelect = (label: string) =>
     setSelected((prev) => { const s = new Set(prev); s.has(label) ? s.delete(label) : s.add(label); return s; });
 
   const toggleSelectAll = () =>
-    setSelected(allSelected ? new Set() : new Set(dynamicNodes.map(([l]) => l)));
+    setSelected(allSelected ? new Set() : new Set(allSubNodes.map(([l]) => l)));
 
   return (
     <>
@@ -604,7 +641,7 @@ function PageStats({
             {addState === "ok" && <p style={{ margin: "8px 0 0", fontSize: "12px", color: "#4ade80" }}>{addMsg}</p>}
             {addState === "err" && <p style={{ margin: "8px 0 0", fontSize: "12px", color: "#f87171" }}>{addMsg}</p>}
 
-            {dynamicNodes.length > 0 && (
+            {allSubNodes.length > 0 && (
               <div style={{ marginTop: "14px" }}>
                 {/* 标题行 + 全选 + 批量操作 */}
                 <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "8px", flexWrap: "wrap" }}>
@@ -619,7 +656,7 @@ function PageStats({
                     />
                     <span style={{ fontSize: "11px", color: "#475569" }}>
                       {allSelected ? "取消全选" : "全选"}
-                      {someSelected && !allSelected ? `（已选 ${selected.size}）` : ""}
+                      {someSelected && !allSelected ? `（已选 ${selected.size} / ${allSubNodes.length}）` : `（共 ${allSubNodes.length} 个节点）`}
                     </span>
                   </label>
 
@@ -634,21 +671,27 @@ function PageStats({
                         onClick={() => { onBatchToggle([...selected], false); setSelected(new Set()); }}
                         style={{ padding: "2px 10px", borderRadius: "5px", fontSize: "11px", border: "1px solid rgba(251,191,36,0.3)", background: "rgba(251,191,36,0.08)", color: "#fbbf24", cursor: "pointer" }}
                       >禁用选中</button>
-                      <button
-                        onClick={() => { onBatchRemove([...selected]); setSelected(new Set()); }}
-                        style={{ padding: "2px 10px", borderRadius: "5px", fontSize: "11px", border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.08)", color: "#f87171", cursor: "pointer" }}
-                      >移除选中</button>
+                      {/* 移除仅针对动态节点 */}
+                      {[...selected].some((l) => dynamicNodes.find(([dl]) => dl === l)) && (
+                        <button
+                          onClick={() => {
+                            const dynamicSelected = [...selected].filter((l) => dynamicNodes.find(([dl]) => dl === l));
+                            onBatchRemove(dynamicSelected);
+                            setSelected(new Set());
+                          }}
+                          style={{ padding: "2px 10px", borderRadius: "5px", fontSize: "11px", border: "1px solid rgba(239,68,68,0.3)", background: "rgba(239,68,68,0.08)", color: "#f87171", cursor: "pointer" }}
+                        >移除动态节点</button>
+                      )}
                     </>
                   )}
-
-                  <span style={{ marginLeft: "auto", fontSize: "11px", color: "#334155" }}>动态节点（重新发布后清除）</span>
                 </div>
 
                 {/* 节点列表 */}
                 <div style={{ display: "flex", flexDirection: "column", gap: "4px" }}>
-                  {dynamicNodes.map(([label, s]) => {
+                  {allSubNodes.map(([label, s]) => {
                     const isEnabled = s.enabled !== false;
                     const isChecked = selected.has(label);
+                    const isDynamic = !!s.dynamic;
                     return (
                       <div
                         key={label}
@@ -675,7 +718,12 @@ function PageStats({
                         <div style={{ width: "6px", height: "6px", borderRadius: "50%", flexShrink: 0,
                           background: isEnabled ? (s.health === "healthy" ? "#4ade80" : "#f87171") : "#475569" }} />
 
-                        {/* URL */}
+                        {/* 类型标签 */}
+                        {!isDynamic && (
+                          <span style={{ fontSize: "10px", color: "#64748b", background: "rgba(100,116,139,0.1)", border: "1px solid rgba(100,116,139,0.2)", borderRadius: "4px", padding: "1px 5px", flexShrink: 0 }}>ENV</span>
+                        )}
+
+                        {/* URL / label */}
                         <span style={{ flex: 1, fontSize: "12px", color: isEnabled ? "#94a3b8" : "#475569", fontFamily: "Menlo, monospace", overflow: "hidden", textOverflow: "ellipsis", whiteSpace: "nowrap" }}>
                           {s.url ?? label}
                         </span>
@@ -687,17 +735,21 @@ function PageStats({
 
                         <span style={{ fontSize: "11px", color: "#475569", flexShrink: 0 }}>{s.calls} 次</span>
 
-                        {/* 单个操作按钮 */}
+                        {/* 单个启用/禁用 */}
                         <button
                           onClick={(e) => { e.stopPropagation(); onToggleBackend(label, !isEnabled); }}
                           style={{ background: "none", border: `1px solid ${isEnabled ? "rgba(251,191,36,0.3)" : "rgba(74,222,128,0.3)"}`, borderRadius: "4px", color: isEnabled ? "#fbbf24" : "#4ade80", fontSize: "11px", cursor: "pointer", padding: "1px 7px", flexShrink: 0 }}
                         >
                           {isEnabled ? "禁用" : "启用"}
                         </button>
-                        <button
-                          onClick={(e) => { e.stopPropagation(); onRemoveBackend(label); }}
-                          style={{ background: "none", border: "none", color: "#f87171", fontSize: "13px", cursor: "pointer", padding: "0 2px", flexShrink: 0, lineHeight: 1 }}
-                        >×</button>
+
+                        {/* 移除仅动态节点可用 */}
+                        {isDynamic && (
+                          <button
+                            onClick={(e) => { e.stopPropagation(); onRemoveBackend(label); }}
+                            style={{ background: "none", border: "none", color: "#f87171", fontSize: "13px", cursor: "pointer", padding: "0 2px", flexShrink: 0, lineHeight: 1 }}
+                          >×</button>
+                        )}
                       </div>
                     );
                   })}
