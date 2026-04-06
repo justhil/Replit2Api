@@ -257,6 +257,16 @@ function PageHome({
         </div>
         {[
           {
+            version: "v1.0.6",
+            date: "2026-04-06",
+            items: [
+              { zh: "新增「模型管理」标签页：支持按组一键全部启用/禁用，或逐条切换每个模型的开关状态", en: "New 'Model Management' tab: group-level one-click enable/disable and per-model toggle switches" },
+              { zh: "禁用的模型从 /v1/models 响应中过滤，调用时返回 403 错误（model_disabled）", en: "Disabled models are filtered from /v1/models and return 403 (model_disabled) when called" },
+              { zh: "状态持久化到 disabled_models.json，重启后保留设置", en: "State persisted to disabled_models.json, survives server restarts" },
+              { zh: "「立即更新」按钮恢复：一键从 GitHub 拉取最新代码 + 自动重启", en: "Restored one-click update button: pulls latest code from GitHub and auto-restarts" },
+            ],
+          },
+          {
             version: "v1.0.5",
             date: "2026-04-06",
             items: [
@@ -1254,10 +1264,206 @@ function PageEndpoints({ displayUrl, expandedGroups, onToggleGroup, totalModels 
 }
 
 // ---------------------------------------------------------------------------
+// PageModels — model enable/disable management
+// ---------------------------------------------------------------------------
+
+interface ModelStatus { id: string; provider: string; enabled: boolean }
+
+type GroupSummary = { total: number; enabled: number };
+
+function ModelToggle({ enabled, onChange }: { enabled: boolean; onChange: () => void }) {
+  return (
+    <button
+      onClick={onChange}
+      style={{
+        width: "36px", height: "20px", borderRadius: "10px", border: "none",
+        background: enabled ? "rgba(99,102,241,0.7)" : "rgba(100,116,139,0.3)",
+        position: "relative", cursor: "pointer", flexShrink: 0, transition: "background 0.15s",
+        padding: 0,
+      }}
+    >
+      <div style={{
+        width: "14px", height: "14px", borderRadius: "50%", background: "#fff",
+        position: "absolute", top: "3px",
+        left: enabled ? "19px" : "3px",
+        transition: "left 0.15s",
+        boxShadow: "0 1px 3px rgba(0,0,0,0.4)",
+      }} />
+    </button>
+  );
+}
+
+function PageModels({
+  baseUrl, apiKey, modelStatus, summary, onRefresh, onToggleProvider, onToggleModel,
+}: {
+  baseUrl: string;
+  apiKey: string;
+  modelStatus: ModelStatus[];
+  summary: Record<string, GroupSummary>;
+  onRefresh: () => void;
+  onToggleProvider: (provider: string, enabled: boolean) => void;
+  onToggleModel: (id: string, enabled: boolean) => void;
+}) {
+  const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({
+    openai: true, anthropic: true, gemini: true, openrouter: true,
+  });
+  const [filter, setFilter] = useState<"all" | "enabled" | "disabled">("all");
+
+  const allGroups: { key: string; title: string; models: ModelEntry[]; provider: Provider }[] = [
+    { key: "openai", title: "OpenAI", models: OPENAI_MODELS, provider: "openai" },
+    { key: "anthropic", title: "Anthropic Claude", models: ANTHROPIC_MODELS, provider: "anthropic" },
+    { key: "gemini", title: "Google Gemini", models: GEMINI_MODELS, provider: "gemini" },
+    { key: "openrouter", title: "OpenRouter", models: OPENROUTER_MODELS, provider: "openrouter" },
+  ];
+
+  const statusMap = new Map(modelStatus.map((m) => [m.id, m.enabled]));
+
+  const totalEnabled = modelStatus.filter((m) => m.enabled).length;
+  const totalCount = modelStatus.length;
+
+  if (!apiKey) {
+    return (
+      <Card>
+        <div style={{ textAlign: "center", color: "#475569", padding: "40px 0" }}>
+          <div style={{ fontSize: "24px", marginBottom: "12px" }}>🔒</div>
+          <div>请先在首页填写 API Key 才能管理模型开关</div>
+        </div>
+      </Card>
+    );
+  }
+
+  return (
+    <>
+      {/* 顶部统计行 */}
+      <Card style={{ marginBottom: "16px", display: "flex", alignItems: "center", gap: "16px", flexWrap: "wrap" }}>
+        <div style={{ flex: 1 }}>
+          <SectionTitle>模型开关管理</SectionTitle>
+          <div style={{ fontSize: "13px", color: "#475569" }}>
+            已启用 <span style={{ color: "#a5b4fc", fontWeight: 700 }}>{totalEnabled}</span> / {totalCount} 个模型
+            · 禁用的模型不会出现在 <code style={{ fontFamily: "Menlo, monospace", fontSize: "12px", color: "#818cf8" }}>/v1/models</code> 响应中，调用时返回 403
+          </div>
+        </div>
+        {/* 过滤器 */}
+        <div style={{ display: "flex", gap: "4px" }}>
+          {(["all", "enabled", "disabled"] as const).map((f) => (
+            <button key={f} onClick={() => setFilter(f)} style={{
+              padding: "5px 12px", borderRadius: "6px", border: "1px solid rgba(255,255,255,0.08)",
+              background: filter === f ? "rgba(99,102,241,0.2)" : "transparent",
+              color: filter === f ? "#a5b4fc" : "#475569", fontSize: "12px", cursor: "pointer",
+              fontWeight: filter === f ? 600 : 400,
+            }}>
+              {f === "all" ? "全部" : f === "enabled" ? "已启用" : "已禁用"}
+            </button>
+          ))}
+        </div>
+        <button onClick={onRefresh} style={{
+          padding: "6px 14px", borderRadius: "7px",
+          border: "1px solid rgba(255,255,255,0.1)", background: "rgba(255,255,255,0.05)",
+          color: "#475569", fontSize: "12px", cursor: "pointer",
+        }}>刷新</button>
+      </Card>
+
+      {/* 各组 */}
+      {allGroups.map(({ key, title, models, provider }) => {
+        const c = PROVIDER_COLORS[provider];
+        const grpSummary = summary[key] ?? { total: models.length, enabled: models.length };
+        const isExpanded = expandedGroups[key];
+        const groupEnabled = grpSummary.enabled > 0;
+        const allEnabled = grpSummary.enabled === grpSummary.total;
+
+        const filteredModels = models.filter((m) => {
+          const en = statusMap.get(m.id) ?? true;
+          if (filter === "enabled") return en;
+          if (filter === "disabled") return !en;
+          return true;
+        });
+
+        return (
+          <div key={key} style={{ marginBottom: "10px" }}>
+            {/* Group header */}
+            <div style={{
+              display: "flex", alignItems: "center", gap: "10px",
+              background: c.bg, border: `1px solid ${c.border}`, borderRadius: "8px",
+              padding: "10px 14px",
+            }}>
+              <div style={{ width: "8px", height: "8px", borderRadius: "50%", background: c.dot, flexShrink: 0 }} />
+              <button onClick={() => setExpandedGroups((p) => ({ ...p, [key]: !p[key] }))} style={{
+                background: "none", border: "none", padding: 0, cursor: "pointer",
+                fontWeight: 600, color: c.text, fontSize: "13px", flex: 1, textAlign: "left",
+              }}>
+                {title}
+              </button>
+              {/* 统计 */}
+              <span style={{ fontSize: "12px", color: "#475569" }}>
+                {grpSummary.enabled}/{grpSummary.total} 已启用
+              </span>
+              {/* 批量按钮 */}
+              <button onClick={() => onToggleProvider(key, true)} style={{
+                padding: "3px 10px", borderRadius: "5px", fontSize: "11px",
+                border: "1px solid rgba(74,222,128,0.3)", background: "rgba(74,222,128,0.08)",
+                color: "#4ade80", cursor: "pointer",
+              }}>全部启用</button>
+              <button onClick={() => onToggleProvider(key, false)} style={{
+                padding: "3px 10px", borderRadius: "5px", fontSize: "11px",
+                border: "1px solid rgba(248,113,113,0.3)", background: "rgba(248,113,113,0.08)",
+                color: "#f87171", cursor: "pointer",
+              }}>全部禁用</button>
+              {/* 组级总开关 */}
+              <ModelToggle
+                enabled={groupEnabled}
+                onChange={() => onToggleProvider(key, !allEnabled)}
+              />
+              <button onClick={() => setExpandedGroups((p) => ({ ...p, [key]: !p[key] }))} style={{
+                background: "none", border: "none", color: "#475569", cursor: "pointer", fontSize: "11px",
+              }}>{isExpanded ? "▲" : "▼"}</button>
+            </div>
+
+            {/* 模型列表 */}
+            {isExpanded && filteredModels.length > 0 && (
+              <div style={{ marginTop: "4px", display: "flex", flexDirection: "column", gap: "2px" }}>
+                {filteredModels.map((m) => {
+                  const enabled = statusMap.get(m.id) ?? true;
+                  return (
+                    <div key={m.id} style={{
+                      display: "flex", alignItems: "center", gap: "10px",
+                      background: enabled ? "rgba(0,0,0,0.18)" : "rgba(0,0,0,0.35)",
+                      border: `1px solid ${enabled ? "rgba(255,255,255,0.05)" : "rgba(248,113,113,0.12)"}`,
+                      borderRadius: "7px", padding: "6px 12px",
+                      opacity: enabled ? 1 : 0.55, transition: "all 0.15s",
+                    }}>
+                      <code style={{
+                        fontFamily: "Menlo, monospace", fontSize: "11.5px",
+                        color: enabled ? c.text : "#475569",
+                        flex: 1, wordBreak: "break-all",
+                      }}>{m.id}</code>
+                      <span style={{ fontSize: "11.5px", color: "#334155", flexShrink: 0 }}>{m.desc}</span>
+                      {m.context && (
+                        <span style={{ fontSize: "10px", color: "#334155", background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.07)", borderRadius: "3px", padding: "1px 5px", flexShrink: 0 }}>{m.context}</span>
+                      )}
+                      {m.badge && <Badge variant={m.badge} />}
+                      <ModelToggle enabled={enabled} onChange={() => onToggleModel(m.id, !enabled)} />
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+            {isExpanded && filteredModels.length === 0 && (
+              <div style={{ padding: "10px 14px", color: "#334155", fontSize: "12.5px" }}>
+                该过滤条件下无匹配模型
+              </div>
+            )}
+          </div>
+        );
+      })}
+    </>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main App
 // ---------------------------------------------------------------------------
 
-type Tab = "home" | "stats" | "endpoints";
+type Tab = "home" | "stats" | "models" | "endpoints";
 
 export default function App() {
   const [tab, setTab] = useState<Tab>("home");
@@ -1274,6 +1480,8 @@ export default function App() {
   const [addUrl, setAddUrl] = useState("");
   const [addState, setAddState] = useState<"idle" | "loading" | "ok" | "err">("idle");
   const [addMsg, setAddMsg] = useState("");
+  const [modelStatus, setModelStatus] = useState<ModelStatus[]>([]);
+  const [modelSummary, setModelSummary] = useState<Record<string, GroupSummary>>({});
 
   const baseUrl = window.location.origin;
   const displayUrl: string = (import.meta.env.VITE_BASE_URL as string | undefined) ?? window.location.origin;
@@ -1365,6 +1573,56 @@ export default function App() {
     fetchStats(apiKey);
   };
 
+  const fetchModels = useCallback(async (key: string = apiKey) => {
+    if (!key) return;
+    try {
+      const r = await fetch(`${baseUrl}/v1/admin/models`, { headers: { Authorization: `Bearer ${key}` } });
+      if (!r.ok) return;
+      const d = await r.json();
+      setModelStatus(d.models ?? []);
+      setModelSummary(d.summary ?? {});
+    } catch {}
+  }, [baseUrl, apiKey]);
+
+  const toggleModelProvider = async (provider: string, enabled: boolean) => {
+    // Optimistic update
+    setModelStatus((prev) => prev.map((m) => m.provider === provider ? { ...m, enabled } : m));
+    setModelSummary((prev) => {
+      const grp = prev[provider];
+      if (!grp) return prev;
+      return { ...prev, [provider]: { total: grp.total, enabled: enabled ? grp.total : 0 } };
+    });
+    try {
+      await fetch(`${baseUrl}/v1/admin/models`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ provider, enabled }),
+      });
+    } catch {}
+    fetchModels();
+  };
+
+  const toggleModelById = async (id: string, enabled: boolean) => {
+    // Optimistic update
+    setModelStatus((prev) => prev.map((m) => m.id === id ? { ...m, enabled } : m));
+    setModelSummary((prev) => {
+      const m = modelStatus.find((ms) => ms.id === id);
+      if (!m) return prev;
+      const grp = prev[m.provider];
+      if (!grp) return prev;
+      const delta = enabled ? 1 : -1;
+      return { ...prev, [m.provider]: { total: grp.total, enabled: Math.max(0, Math.min(grp.total, grp.enabled + delta)) } };
+    });
+    try {
+      await fetch(`${baseUrl}/v1/admin/models`, {
+        method: "PATCH",
+        headers: { Authorization: `Bearer ${apiKey}`, "Content-Type": "application/json" },
+        body: JSON.stringify({ ids: [id], enabled }),
+      });
+    } catch {}
+    fetchModels();
+  };
+
   const batchRemoveBackends = async (labels: string[]) => {
     await Promise.all(labels.map((l) =>
       fetch(`${baseUrl}/v1/admin/backends/${l}`, {
@@ -1379,14 +1637,16 @@ export default function App() {
     checkHealth();
     fetchSTMode();
     fetchStats(apiKey);
+    fetchModels(apiKey);
     const iv1 = setInterval(checkHealth, 30000);
     const iv2 = setInterval(() => fetchStats(apiKey), 15000);
     return () => { clearInterval(iv1); clearInterval(iv2); };
-  }, [checkHealth, fetchSTMode, fetchStats, apiKey]);
+  }, [checkHealth, fetchSTMode, fetchStats, fetchModels, apiKey]);
 
   const TABS: { id: Tab; label: string }[] = [
     { id: "home", label: "首页" },
     { id: "stats", label: "统计 & 节点" },
+    { id: "models", label: "模型管理" },
     { id: "endpoints", label: "端点文档" },
   ];
 
@@ -1490,6 +1750,17 @@ export default function App() {
             onToggleBackend={toggleBackend}
             onBatchToggle={batchToggleBackends}
             onBatchRemove={batchRemoveBackends}
+          />
+        )}
+        {tab === "models" && (
+          <PageModels
+            baseUrl={baseUrl}
+            apiKey={apiKey}
+            modelStatus={modelStatus}
+            summary={modelSummary}
+            onRefresh={() => fetchModels(apiKey)}
+            onToggleProvider={toggleModelProvider}
+            onToggleModel={toggleModelById}
           />
         )}
         {tab === "endpoints" && (

@@ -1,6 +1,6 @@
 {
-  "version": "1.0.5",
+  "version": "1.0.6",
   "name": "AI Proxy Gateway",
   "releaseDate": "2026-04-06",
-  "releaseNotes": "v1.0.5 — SetupWizard single-step prompt; Remix-only quickstart; ASCII-safe X-Proxy-Version header; sub-node URL auto-normalization; batch backend management"
+  "releaseNotes": "v1.0.6 — Model management tab: group-level and per-model enable/disable switches; disabled models filtered from /v1/models and blocked at routing; state persisted to disk"
 }

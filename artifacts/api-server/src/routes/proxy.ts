@@ -1,8 +1,8 @@
 import { Router, type IRouter, type Request, type Response } from "express";
 import OpenAI from "openai";
 import Anthropic from "@anthropic-ai/sdk";
-import { readFileSync, writeFileSync, existsSync } from "fs";
-import { resolve } from "path";
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from "fs";
+import { resolve, dirname } from "path";
 import { getSillyTavernMode } from "./settings";
 
 const router: IRouter = Router();
@@ -95,6 +95,55 @@ function saveDynamicBackends(list: DynamicBackend[]): void {
 }
 
 let dynamicBackends: DynamicBackend[] = loadDynamicBackends();
+
+// ---------------------------------------------------------------------------
+// Model provider map + enable/disable management
+// ---------------------------------------------------------------------------
+
+type ModelProvider = "openai" | "anthropic" | "gemini" | "openrouter";
+
+// Build a complete id → provider lookup from the model constants above
+const MODEL_PROVIDER_MAP = new Map<string, ModelProvider>();
+
+for (const id of OPENAI_CHAT_MODELS) { MODEL_PROVIDER_MAP.set(id, "openai"); }
+for (const id of OPENAI_THINKING_ALIASES) { MODEL_PROVIDER_MAP.set(id, "openai"); }
+for (const base of ANTHROPIC_BASE_MODELS) {
+  MODEL_PROVIDER_MAP.set(base, "anthropic");
+  MODEL_PROVIDER_MAP.set(`${base}-thinking`, "anthropic");
+  MODEL_PROVIDER_MAP.set(`${base}-thinking-visible`, "anthropic");
+}
+for (const base of GEMINI_BASE_MODELS) {
+  MODEL_PROVIDER_MAP.set(base, "gemini");
+  MODEL_PROVIDER_MAP.set(`${base}-thinking`, "gemini");
+  MODEL_PROVIDER_MAP.set(`${base}-thinking-visible`, "gemini");
+}
+for (const id of OPENROUTER_FEATURED) { MODEL_PROVIDER_MAP.set(id, "openrouter"); }
+
+const DISABLED_MODELS_FILE = resolve(process.cwd(), "disabled_models.json");
+
+function loadDisabledModels(): Set<string> {
+  try {
+    if (existsSync(DISABLED_MODELS_FILE)) {
+      const list = JSON.parse(readFileSync(DISABLED_MODELS_FILE, "utf8"));
+      if (Array.isArray(list)) return new Set<string>(list);
+    }
+  } catch {}
+  return new Set<string>();
+}
+
+function saveDisabledModels(set: Set<string>): void {
+  try {
+    const dir = dirname(DISABLED_MODELS_FILE);
+    if (!existsSync(dir)) mkdirSync(dir, { recursive: true });
+    writeFileSync(DISABLED_MODELS_FILE, JSON.stringify([...set], null, 2));
+  } catch {}
+}
+
+let disabledModels: Set<string> = loadDisabledModels();
+
+function isModelEnabled(id: string): boolean {
+  return !disabledModels.has(id);
+}
 
 // Normalize sub-node endpoint URL — ensures it ends with /api.
 // Correct format: https://{project}.replit.app/api
@@ -319,7 +368,7 @@ router.get("/v1/models", requireApiKey, (_req: Request, res: Response) => {
   }));
   res.json({
     object: "list",
-    data: ALL_MODELS.map((m) => ({
+    data: ALL_MODELS.filter((m) => isModelEnabled(m.id)).map((m) => ({
       id: m.id,
       object: "model",
       created: 1700000000,
@@ -465,6 +514,12 @@ router.post("/v1/chat/completions", requireApiKey, async (req: Request, res: Res
     tools?: OAITool[];
     tool_choice?: unknown;
   };
+
+  // Reject disabled models early
+  if (model && !isModelEnabled(model)) {
+    res.status(403).json({ error: { message: `Model '${model}' is disabled on this gateway`, type: "invalid_request_error", code: "model_disabled" } });
+    return;
+  }
 
   const selectedModel = model && ALL_MODELS.some((m) => m.id === model) ? model : "gpt-5.2";
   const isClaudeModel = ANTHROPIC_BASE_MODELS.some((base) =>
@@ -713,6 +768,49 @@ router.patch("/v1/admin/backends", requireApiKey, (req: Request, res: Response) 
   }
   saveDynamicBackends(dynamicBackends);
   res.json({ updated, enabled });
+});
+
+// ---------------------------------------------------------------------------
+// Admin: model enable/disable management
+// ---------------------------------------------------------------------------
+
+// GET /v1/admin/models — list all models with provider + enabled status
+router.get("/v1/admin/models", requireApiKey, (_req: Request, res: Response) => {
+  const models = ALL_MODELS.map((m) => ({
+    id: m.id,
+    provider: MODEL_PROVIDER_MAP.get(m.id) ?? "openrouter",
+    enabled: isModelEnabled(m.id),
+  }));
+  const summary: Record<string, { total: number; enabled: number }> = {};
+  for (const m of models) {
+    if (!summary[m.provider]) summary[m.provider] = { total: 0, enabled: 0 };
+    summary[m.provider].total++;
+    if (m.enabled) summary[m.provider].enabled++;
+  }
+  res.json({ models, summary });
+});
+
+// PATCH /v1/admin/models — bulk enable/disable by ids or by provider
+// Body: { ids?: string[], provider?: string, enabled: boolean }
+router.patch("/v1/admin/models", requireApiKey, (req: Request, res: Response) => {
+  const { ids, provider, enabled } = req.body as { ids?: string[]; provider?: string; enabled?: boolean };
+  if (typeof enabled !== "boolean") { res.status(400).json({ error: "enabled (boolean) required" }); return; }
+
+  let targets: string[] = [];
+  if (Array.isArray(ids) && ids.length > 0) {
+    targets = ids.filter((id) => MODEL_PROVIDER_MAP.has(id));
+  } else if (typeof provider === "string") {
+    targets = ALL_MODELS.map((m) => m.id).filter((id) => MODEL_PROVIDER_MAP.get(id) === provider);
+  } else {
+    res.status(400).json({ error: "ids (string[]) or provider (string) required" }); return;
+  }
+
+  for (const id of targets) {
+    if (enabled) disabledModels.delete(id);
+    else disabledModels.add(id);
+  }
+  saveDisabledModels(disabledModels);
+  res.json({ updated: targets.length, enabled, ids: targets });
 });
 
 // ---------------------------------------------------------------------------
