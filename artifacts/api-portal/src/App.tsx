@@ -268,6 +268,24 @@ function PageHome({
               ],
             },
             {
+              version: "v1.1.4",
+              date: "2026-04-07",
+              items: [
+                { zh: "Gemini 和 OpenRouter 接入 Replit 内置 AI Integrations：四大后端（OpenAI / Anthropic / Gemini / OpenRouter）全部使用平台原生集成，无需任何第三方 API Key", en: "Gemini & OpenRouter now use Replit built-in AI Integrations — all 4 backends (OpenAI / Anthropic / Gemini / OpenRouter) run natively, no third-party API keys needed" },
+                { zh: "Gemini 模型走 @google/genai SDK 原生调用，支持流式/非流式及 thinking 模式，自动进行 OpenAI ↔ Gemini 格式转换", en: "Gemini models routed via @google/genai SDK natively with full streaming, non-streaming, and thinking mode support; auto-converts between OpenAI and Gemini formats" },
+                { zh: "OpenRouter 模型复用 OpenAI SDK，指向 Replit OpenRouter 集成代理端点，无缝支持 Grok / Llama / DeepSeek / Mistral 等长尾模型", en: "OpenRouter models reuse OpenAI SDK pointed at Replit's OpenRouter integration proxy — seamless support for Grok, Llama, DeepSeek, Mistral and more" },
+                { zh: "设置向导和健康检查更新：新增 Gemini / OpenRouter Integration 的添加说明和环境变量检测", en: "Setup wizard and health check updated: now includes Gemini / OpenRouter integration setup instructions and env var detection" },
+              ],
+            },
+            {
+              version: "v1.1.3",
+              date: "2026-04-07",
+              items: [
+                { zh: "配置助手自动检测 AI Integrations 和存储状态，动态生成仅需要的步骤", en: "Setup wizard auto-detects AI Integrations & storage status; dynamically generates only the steps actually needed" },
+                { zh: "Remix 和 GitHub 导入的用户自动跳过已配置好的步骤", en: "Remix and GitHub-import users skip pre-configured steps automatically" },
+              ],
+            },
+            {
               version: "v1.1.2",
               date: "2026-04-07",
               items: [
