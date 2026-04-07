@@ -1,6 +1,6 @@
 {
-  "version": "1.1.0",
+  "version": "1.1.1",
   "name": "Replit2Api",
-  "releaseDate": "2026-04-06",
-  "releaseNotes": "v1.1.0 — Friend proxy retry loop (up to 3 times, auto-skip failed nodes); FriendProxyHttpError distinguishes 5xx vs network; SSE headers delayed to first chunk; token fallback estimation"
+  "releaseDate": "2026-04-07",
+  "releaseNotes": "v1.1.1 — Streaming timeout 120s→600s (fixes truncation at ~5k tokens); SSE keepalive sent immediately on connect (15s interval); ENV node copyable prompt block in Stats page; changelog shows only latest entry by default"
 }

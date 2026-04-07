@@ -277,6 +277,20 @@ Manage multiple Replit2Api instances from the **Stats & Nodes** tab:
 
 ## 更新日志 · Changelog
 
+### v1.1.1 — 2026-04-07
+
+- **流式超时 120s → 600s**：彻底解决长回复（≥5000 token）在传输途中被截断的问题
+- **SSE 保活间隔 3s → 15s**：减少不必要带宽消耗，仍可防止代理 60 秒空闲超时
+- **ENV 节点配置复制框**：统计页「添加节点」区块现在直接展示 ENV 提示词内容，点击一键复制
+- **日志页只展示最新一条**：其余历史版本折叠进滚动栏，首页核心功能无需滚动即可看全
+
+- **Streaming timeout 120 s → 600 s**: fixes truncation of long responses (5 000+ tokens)
+- **SSE keepalive interval 3 s → 15 s**: less overhead while still preventing proxy idle timeouts
+- **ENV node copyable block**: prompt text is now directly visible in the Stats page with a one-click copy button
+- **Changelog shows only latest release**: all older entries folded into a scrollable history section
+
+---
+
 ### v1.1.0 — 2026-04-06
 
 - **项目正式更名为 Replit2Api**（UI、标题、提示词全部同步更新）

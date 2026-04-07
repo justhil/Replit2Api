@@ -258,6 +258,16 @@ function PageHome({
         {(() => {
           const releases = [
             {
+              version: "v1.1.1",
+              date: "2026-04-07",
+              items: [
+                { zh: "流式超时从 120 秒提升到 600 秒（10 分钟），彻底解决长回复（≥5000 token）在传输途中被截断的问题", en: "Streaming fetch timeout raised from 120 s to 600 s — prevents truncation of long responses (5 000+ tokens)" },
+                { zh: "SSE 保活间隔从每 3 秒改为每 15 秒，减少不必要带宽消耗，同时仍可防止代理 60 秒空闲超时", en: "SSE keepalive interval changed from 3 s to 15 s — less overhead while still preventing proxy idle timeouts" },
+                { zh: "统计页「添加节点」区块新增 ENV 节点配置复制框：提示词内容直接可见，点击一键复制发给 Replit Agent", en: "Stats page: ENV node prompt is now displayed in a copyable block — no more hidden-behind-button UX" },
+                { zh: "日志页面只展示最新一条更新，其余历史版本折叠进滚动栏，首页核心功能无需滚动即可看全", en: "Changelog now shows only the latest release by default; all older entries are in a scrollable history section" },
+              ],
+            },
+            {
               version: "v1.1.0",
               date: "2026-04-06",
               items: [
@@ -358,7 +368,7 @@ function PageHome({
             </div>
           );
 
-          const VISIBLE = 2;
+          const VISIBLE = 1;
           const visible = releases.slice(0, VISIBLE);
           const older = releases.slice(VISIBLE);
 
@@ -367,12 +377,12 @@ function PageHome({
               {visible.map(renderRelease)}
               {older.length > 0 && (
                 <>
-                  <div style={{ display: "flex", alignItems: "center", gap: "8px", margin: "4px 0 12px" }}>
+                  <div style={{ display: "flex", alignItems: "center", gap: "8px", margin: "4px 0 10px" }}>
                     <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.05)" }} />
-                    <span style={{ fontSize: "10.5px", color: "#334155" }}>历史版本（向下滚动）</span>
+                    <span style={{ fontSize: "10.5px", color: "#334155" }}>历史版本 ↓ 滚动查看</span>
                     <div style={{ flex: 1, height: "1px", background: "rgba(255,255,255,0.05)" }} />
                   </div>
-                  <div style={{ maxHeight: "260px", overflowY: "auto", paddingRight: "4px" }}>
+                  <div style={{ maxHeight: "200px", overflowY: "auto", paddingRight: "4px" }}>
                     {older.map(renderRelease)}
                   </div>
                 </>
