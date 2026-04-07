@@ -268,6 +268,16 @@ function PageHome({
               ],
             },
             {
+              version: "v1.1.5",
+              date: "2026-04-07",
+              items: [
+                { zh: "子节点优先路由：有健康子节点时只在子节点间轮询，本地账号仅在所有子节点不可用时作为兜底，防止主账号余额耗尽拖垮整个轮询", en: "Friend-first routing: requests are round-robined across healthy friend nodes only; local backend is used as fallback only when all friends are down — prevents main account balance exhaustion from breaking the pool" },
+                { zh: "健康检查误标红修复：请求成功后立即将子节点标记为健康（不再仅依赖后台探测）；探测超时从 5 秒提升到 15 秒以适应 Replit 冷启动", en: "Health check false-red fix: successful requests immediately mark friend nodes as healthy; probe timeout raised from 5s to 15s to accommodate Replit cold starts" },
+                { zh: "添加节点时健康缓存 key 统一使用归一化 URL，修复 raw URL 与 normalized URL 不匹配导致的状态丢失", en: "Add-backend health cache now uses normalized URL as key, fixing cache miss caused by raw vs normalized URL mismatch" },
+                { zh: "配置助手提示词改为 setupReplitAIIntegrations() 编程接口，四个 provider 逐条执行，零歧义；禁止索取 Key 的声明覆盖全部四家", en: "Setup wizard prompt now uses setupReplitAIIntegrations() API calls for all 4 providers — sequential, unambiguous; API key ban text covers all four providers" },
+              ],
+            },
+            {
               version: "v1.1.4",
               date: "2026-04-07",
               items: [
