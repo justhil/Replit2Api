@@ -577,7 +577,18 @@ function PageStats({
         ) : statsError === "server" ? (
           <p style={{ margin: 0, fontSize: "13px", color: "#f87171" }}>服务器未配置 PROXY_API_KEY — 请运行配置助手完成初始化。</p>
         ) : statsError === "auth" ? (
-          <p style={{ margin: 0, fontSize: "13px", color: "#f87171" }}>认证失败，请检查首页填入的 API Key 是否与服务器一致。</p>
+          <div style={{ fontSize: "13px", color: "#f87171", lineHeight: "1.7" }}>
+            <div style={{ fontWeight: 600, marginBottom: "6px" }}>认证失败（API Key 不匹配）</div>
+            <div style={{ color: "#94a3b8", fontSize: "12.5px" }}>
+              首页填入的 API Key 需与服务器 Secrets 中的 <code style={{ color: "#a78bfa", fontFamily: "Menlo, monospace" }}>PROXY_API_KEY</code> 完全一致。
+            </div>
+            <div style={{ color: "#475569", fontSize: "12px", marginTop: "6px" }}>
+              如果你是 Remix/Fork 的项目，这个 Key 由配置助手自动生成，从未显示过。
+              请在 Replit 左侧边栏 <strong style={{ color: "#94a3b8" }}>🔒 Secrets</strong> 面板中找到
+              <code style={{ color: "#a78bfa", fontFamily: "Menlo, monospace", marginLeft: "4px" }}>PROXY_API_KEY</code>
+              的值，复制后填到首页 API Key 输入框中。
+            </div>
+          </div>
         ) : !stats ? (
           <p style={{ margin: 0, fontSize: "13px", color: "#475569" }}>加载中...</p>
         ) : (
