@@ -224,24 +224,18 @@ setTimeout(refreshHealthAsync, 2000);
 setInterval(refreshHealthAsync, HEALTH_TTL_MS);
 
 function buildBackendPool(): Backend[] {
-  const pool: Backend[] = [];
-
-  const localKey = process.env.AI_INTEGRATIONS_OPENAI_API_KEY;
-  const localBase = process.env.AI_INTEGRATIONS_OPENAI_BASE_URL;
-  if (localKey && localBase) pool.push({ kind: "local" });
+  const friends: Backend[] = [];
 
   for (const { label, url, apiKey } of getFriendProxyConfigs()) {
     const healthy = getCachedHealth(url);
-    // Include if: healthy=true OR never checked yet (optimistic until first result)
     if (healthy !== false) {
-      pool.push({ kind: "friend", label, url, apiKey });
+      friends.push({ kind: "friend", label, url, apiKey });
     }
   }
 
-  // Fallback: if all friends are down, use local only
-  if (pool.length === 0) pool.push({ kind: "local" });
+  if (friends.length > 0) return friends;
 
-  return pool;
+  return [{ kind: "local" }];
 }
 
 let requestCounter = 0;
@@ -254,11 +248,11 @@ function pickBackend(): Backend {
 }
 
 function pickBackendExcluding(exclude: Set<string>): Backend | null {
-  const pool = buildBackendPool().filter(
-    (b) => b.kind === "local" || !exclude.has(b.url)
+  const friends = buildBackendPool().filter(
+    (b) => b.kind === "friend" && !exclude.has(b.url)
   );
-  if (pool.length === 0) return null;
-  return pool[requestCounter % pool.length];
+  if (friends.length > 0) return friends[requestCounter % friends.length];
+  return { kind: "local" };
 }
 
 // ---------------------------------------------------------------------------
