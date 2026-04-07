@@ -1,6 +1,6 @@
 {
-  "version": "1.1.1",
+  "version": "1.1.2",
   "name": "Replit2Api",
   "releaseDate": "2026-04-07",
-  "releaseNotes": "v1.1.1 — Streaming timeout 120s→600s (fixes truncation at ~5k tokens); SSE keepalive sent immediately on connect (15s interval); ENV node copyable prompt block in Stats page; changelog shows only latest entry by default"
+  "releaseNotes": "v1.1.2 — Setup wizard redesign: user now sets their own access password; key is embedded directly in the Agent prompt and auto-filled in the portal on completion; usage stats now persisted across restarts via cloudPersist"
 }

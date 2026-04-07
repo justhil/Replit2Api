@@ -6,7 +6,7 @@
 >
 > 一个 Replit 项目，统一接入主流 AI 服务商，提供 OpenAI 兼容接口。
 
-[![Version](https://img.shields.io/badge/version-1.1.0-6366f1?style=flat-square)](./version.json)
+[![Version](https://img.shields.io/badge/version-1.1.2-6366f1?style=flat-square)](./version.json)
 [![Replit](https://img.shields.io/badge/Replit-Remix%20now-f26207?style=flat-square&logo=replit)](https://replit.com/@Akatsukis036s/Replit-Api-Public)
 [![License](https://img.shields.io/badge/license-MIT-10b981?style=flat-square)](./LICENSE)
 

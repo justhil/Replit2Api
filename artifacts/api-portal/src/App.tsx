@@ -258,6 +258,16 @@ function PageHome({
         {(() => {
           const releases = [
             {
+              version: "v1.1.2",
+              date: "2026-04-07",
+              items: [
+                { zh: "配置助手重新设计：用户现在可以自行设定访问密码，密码明文写入发给 Agent 的指令中，Agent 直接配置，无需二次询问", en: "Setup wizard redesign: user sets their own access password; key is written directly into the Agent prompt — no random-generated key, no follow-up question" },
+                { zh: "配置完成后门户首页「API Key」输入框自动填入用户设定的密码，无需手动复制", en: "Portal auto-fills the API Key field on wizard completion — user doesn't need to type their key a second time" },
+                { zh: "用量统计通过 cloudPersist 持久化到存储（开发环境写本地文件，生产环境写对象存储）：服务器重启或重新部署后统计数据不丢失", en: "Usage stats now persisted via cloudPersist (local file in dev, object storage in prod) — survives restarts and Publish redeploys" },
+                { zh: "认证失败提示语简化：密码由用户自定义，提示只需告知去 Secrets 面板查看或重新运行配置助手", en: "Auth error message simplified to match the new self-defined key flow" },
+              ],
+            },
+            {
               version: "v1.1.1",
               date: "2026-04-07",
               items: [
