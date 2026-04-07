@@ -1,6 +1,6 @@
 {
-  "version": "1.1.2",
+  "version": "1.1.3",
   "name": "Replit2Api",
   "releaseDate": "2026-04-07",
-  "releaseNotes": "v1.1.2 — Setup wizard redesign: user now sets their own access password; key is embedded directly in the Agent prompt and auto-filled in the portal on completion; usage stats now persisted across restarts via cloudPersist"
+  "releaseNotes": "v1.1.3 — Setup wizard now auto-detects AI Integrations & storage status; dynamically generates only the steps actually needed; Remix and GitHub-import users skip pre-configured steps automatically"
 }

@@ -258,6 +258,16 @@ function PageHome({
         {(() => {
           const releases = [
             {
+              version: "v1.1.3",
+              date: "2026-04-07",
+              items: [
+                { zh: "配置助手自动检测：提交密码后先查询服务器状态，AI 集成和云端存储已就绪的步骤自动从指令中省略", en: "Setup wizard auto-detects: queries server status before generating prompt; skips AI Integrations and storage steps if already ready" },
+                { zh: "Remix / GitHub 导入零配置：Replit 平台自动注入 AI Integration 环境变量，大部分用户只需设密码一步即可完成配置", en: "Remix / GitHub-import zero-config: Replit auto-injects AI Integration env vars; most users only need to set a password" },
+                { zh: "动态提示词步骤编号：根据实际需要的步骤数自动编号，不再硬编码「三步」", en: "Dynamic step numbering in the Agent prompt based on what's actually needed" },
+                { zh: "检测失败且无密码时自动引导用户输入密码，而非显示空白指令", en: "When check fails and no key is set, wizard now guides user to enter a password first instead of showing a broken prompt" },
+              ],
+            },
+            {
               version: "v1.1.2",
               date: "2026-04-07",
               items: [
