@@ -879,15 +879,13 @@ function PageStats({
 // UpdateBar — 全局顶部更新通知条（自动检测，有更新时展示）
 // ---------------------------------------------------------------------------
 
-type UBState = "idle" | "applying" | "done" | "error";
-
-function UpdateBar({ baseUrl, apiKey }: { baseUrl: string; apiKey: string }) {
+function UpdateBar({ baseUrl, apiKey: _apiKey }: { baseUrl: string; apiKey: string }) {
   const [hasUpdate, setHasUpdate] = useState(false);
   const [latestVer, setLatestVer] = useState("");
   const [releaseNotes, setReleaseNotes] = useState("");
-  const [ubState, setUbState] = useState<UBState>("idle");
-  const [msg, setMsg] = useState("");
   const [dismissed, setDismissed] = useState(false);
+  const [copied, setCopied] = useState(false);
+  const [checking, setChecking] = useState(false);
 
   const check = useCallback(async () => {
     try {
@@ -906,105 +904,88 @@ function UpdateBar({ baseUrl, apiKey }: { baseUrl: string; apiKey: string }) {
     return () => clearInterval(t);
   }, [check]);
 
-  const applyUpdate = async () => {
-    if (!apiKey) {
-      setMsg("请先在首页填写 API Key 后再执行更新");
-      setUbState("error");
-      return;
-    }
-    setUbState("applying");
-    setMsg("正在从 GitHub 拉取最新代码，服务器即将自动重启（约 30-60 秒）…");
+  const buildPrompt = (ver: string) =>
+    `请帮我把 AI 网关更新到最新版本 ${ver}。\n` +
+    `从 GitHub 仓库 https://github.com/Akatsuki03/Replit2Api 拉取最新代码，覆盖当前项目文件（无需保留原文件），` +
+    `然后运行 pnpm install，最后重启 "artifacts/api-server: API Server" 和 "artifacts/api-portal: web" 两个工作流。`;
+
+  const copyPrompt = async () => {
+    const text = buildPrompt(latestVer);
     try {
-      const r = await fetch(`${baseUrl}/api/update/apply`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${apiKey}` },
-      });
-      const d = await r.json();
-      if (!r.ok) {
-        setUbState("error");
-        setMsg(d.error ?? "更新失败，请稍后重试");
-      } else {
-        setUbState("done");
-        setMsg("更新已启动 — 服务器正在重新编译并重启，约 30 秒后自动刷新页面…");
-        setTimeout(() => window.location.reload(), 35000);
-      }
+      await navigator.clipboard.writeText(text);
     } catch {
-      setUbState("error");
-      setMsg("网络错误，请重试");
+      const el = document.createElement("textarea");
+      el.value = text;
+      document.body.appendChild(el);
+      el.select();
+      document.execCommand("copy");
+      document.body.removeChild(el);
     }
+    setCopied(true);
+    setTimeout(() => setCopied(false), 2500);
   };
 
-  if (dismissed || (!hasUpdate && ubState === "idle")) return null;
+  const recheck = async () => {
+    setChecking(true);
+    await check();
+    setChecking(false);
+  };
 
-  const isWorking = ubState === "applying";
-  const isDone = ubState === "done";
-  const isError = ubState === "error";
+  if (dismissed || !hasUpdate) return null;
 
   return (
     <div style={{
       position: "sticky", top: 0, zIndex: 1000,
-      background: isError ? "rgba(239,68,68,0.12)" : isDone ? "rgba(74,222,128,0.1)" : "rgba(251,191,36,0.1)",
-      borderBottom: `1px solid ${isError ? "rgba(239,68,68,0.3)" : isDone ? "rgba(74,222,128,0.25)" : "rgba(251,191,36,0.3)"}`,
+      background: "rgba(251,191,36,0.1)",
+      borderBottom: "1px solid rgba(251,191,36,0.3)",
       backdropFilter: "blur(12px)",
     }}>
       <div style={{
         maxWidth: "900px", margin: "0 auto", padding: "10px 24px",
         display: "flex", alignItems: "center", gap: "12px", flexWrap: "wrap",
       }}>
-        <span style={{ fontSize: "16px", flexShrink: 0 }}>
-          {isError ? "⚠️" : isDone ? "✓" : isWorking ? "⟳" : "🎉"}
-        </span>
+        <span style={{ fontSize: "16px", flexShrink: 0 }}>🎉</span>
 
         <div style={{ flex: 1, minWidth: 0 }}>
-          {(isWorking || isDone || isError) ? (
-            <span style={{ fontSize: "13px", color: isError ? "#f87171" : isDone ? "#4ade80" : "#fbbf24" }}>{msg}</span>
-          ) : (
-            <span style={{ fontSize: "13px", color: "#fbbf24" }}>
-              <strong>发现新版本 v{latestVer}</strong>
-              {releaseNotes && <span style={{ color: "#92400e", marginLeft: "10px", fontSize: "12px" }}>{releaseNotes}</span>}
-            </span>
-          )}
+          <span style={{ fontSize: "13px", color: "#fbbf24" }}>
+            <strong>发现新版本 v{latestVer}</strong>
+            {releaseNotes && <span style={{ color: "#92400e", marginLeft: "10px", fontSize: "12px" }}>{releaseNotes}</span>}
+          </span>
         </div>
 
-        {!isDone && hasUpdate && (
-          <button
-            onClick={applyUpdate}
-            disabled={isWorking}
-            style={{
-              padding: "5px 14px", borderRadius: "7px", fontSize: "12.5px", fontWeight: 700,
-              border: "1px solid rgba(251,191,36,0.5)", flexShrink: 0,
-              background: isWorking ? "rgba(251,191,36,0.05)" : "rgba(251,191,36,0.18)",
-              color: "#fbbf24", cursor: isWorking ? "not-allowed" : "pointer",
-              opacity: isWorking ? 0.6 : 1,
-            }}
-          >
-            {isWorking ? "更新中…" : "立即更新"}
-          </button>
-        )}
+        {/* 复制提示词 — 粘贴给 Replit Agent 完成更新 */}
+        <button
+          onClick={copyPrompt}
+          style={{
+            padding: "5px 14px", borderRadius: "7px", fontSize: "12.5px", fontWeight: 700,
+            border: `1px solid ${copied ? "rgba(74,222,128,0.5)" : "rgba(251,191,36,0.5)"}`,
+            background: copied ? "rgba(74,222,128,0.15)" : "rgba(251,191,36,0.18)",
+            color: copied ? "#4ade80" : "#fbbf24",
+            cursor: "pointer", flexShrink: 0, transition: "all 0.2s",
+          }}
+        >
+          {copied ? "✓ 已复制！粘贴给 Agent" : "📋 复制更新提示词"}
+        </button>
 
-        {/* 重新检测 — 始终显示（更新中除外），error 状态也可点 */}
-        {!isWorking && !isDone && (
-          <button
-            onClick={() => { setUbState("idle"); setMsg(""); check(); }}
-            style={{
-              padding: "5px 10px", borderRadius: "7px", fontSize: "12px",
-              border: "1px solid rgba(251,191,36,0.25)",
-              background: "transparent", color: "#92400e", cursor: "pointer", flexShrink: 0,
-            }}
-          >
-            重新检测
-          </button>
-        )}
+        <button
+          onClick={recheck}
+          disabled={checking}
+          style={{
+            padding: "5px 10px", borderRadius: "7px", fontSize: "12px",
+            border: "1px solid rgba(251,191,36,0.25)",
+            background: "transparent", color: "#92400e",
+            cursor: checking ? "not-allowed" : "pointer", flexShrink: 0,
+            opacity: checking ? 0.5 : 1,
+          }}
+        >
+          {checking ? "检测中…" : "重新检测"}
+        </button>
 
-        {!isWorking && !isDone && (
-          <button
-            onClick={() => setDismissed(true)}
-            style={{ background: "none", border: "none", color: "#92400e", fontSize: "18px", cursor: "pointer", flexShrink: 0, lineHeight: 1 }}
-          >×</button>
-        )}
+        <button
+          onClick={() => setDismissed(true)}
+          style={{ background: "none", border: "none", color: "#92400e", fontSize: "18px", cursor: "pointer", flexShrink: 0, lineHeight: 1 }}
+        >×</button>
       </div>
-
-      <style>{`@keyframes spin{from{transform:rotate(0deg)}to{transform:rotate(360deg)}}`}</style>
     </div>
   );
 }

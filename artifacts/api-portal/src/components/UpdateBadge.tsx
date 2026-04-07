@@ -51,7 +51,7 @@ export default function UpdateBadge({ baseUrl, apiKey: _apiKey }: Props) {
   const buildAgentPrompt = (latestVer: string) =>
     `请帮我把 AI 网关更新到最新版本 ${latestVer}。\n` +
     `从 GitHub 仓库 https://github.com/Akatsuki03/Replit2Api 拉取最新代码，覆盖当前项目文件（无需保留原文件），` +
-    `然后运行 pnpm install，最后重启 "artifacts/api-server: API Server" 工作流。`;
+    `然后运行 pnpm install，最后重启 "artifacts/api-server: API Server" 和 "artifacts/api-portal: web" 两个工作流。`;
 
   const copyPrompt = async () => {
     if (!info?.latestVersion) return;
