@@ -289,8 +289,10 @@ function makeLocalAnthropic(): Anthropic {
 
 
 // ---------------------------------------------------------------------------
-// Per-backend usage statistics (resets on server restart)
+// Per-backend usage statistics — persisted to cloudPersist ("usage_stats.json")
 // ---------------------------------------------------------------------------
+
+const STATS_FILE = "usage_stats.json";
 
 interface BackendStat {
   calls: number;
@@ -302,12 +304,63 @@ interface BackendStat {
   streamingCalls: number;
 }
 
+const EMPTY_STAT = (): BackendStat => ({
+  calls: 0, errors: 0, promptTokens: 0, completionTokens: 0,
+  totalDurationMs: 0, totalTtftMs: 0, streamingCalls: 0,
+});
+
 const statsMap = new Map<string, BackendStat>();
 
-function getStat(label: string): BackendStat {
-  if (!statsMap.has(label)) {
-    statsMap.set(label, { calls: 0, errors: 0, promptTokens: 0, completionTokens: 0, totalDurationMs: 0, totalTtftMs: 0, streamingCalls: 0 });
+// ── Persistence helpers ────────────────────────────────────────────────────
+
+function statsToObject(): Record<string, BackendStat> {
+  return Object.fromEntries(statsMap.entries());
+}
+
+async function persistStats(): Promise<void> {
+  try { await writeJson(STATS_FILE, statsToObject()); } catch {}
+}
+
+// Debounced save: schedule a write 10 s after the last stat update.
+// Prevents a GCS write on every single request while still saving promptly.
+let _saveTimer: ReturnType<typeof setTimeout> | null = null;
+function scheduleSave(): void {
+  if (_saveTimer) clearTimeout(_saveTimer);
+  _saveTimer = setTimeout(() => { _saveTimer = null; void persistStats(); }, 10_000);
+}
+
+// Periodic safety-net save every 5 minutes.
+setInterval(() => { void persistStats(); }, 5 * 60 * 1000);
+
+// Load persisted stats at startup.
+(async () => {
+  try {
+    const saved = await readJson<Record<string, BackendStat>>(STATS_FILE);
+    if (saved && typeof saved === "object") {
+      for (const [label, raw] of Object.entries(saved)) {
+        if (raw && typeof raw === "object") {
+          statsMap.set(label, {
+            calls:            Number(raw.calls)            || 0,
+            errors:           Number(raw.errors)           || 0,
+            promptTokens:     Number(raw.promptTokens)     || 0,
+            completionTokens: Number(raw.completionTokens) || 0,
+            totalDurationMs:  Number(raw.totalDurationMs)  || 0,
+            totalTtftMs:      Number(raw.totalTtftMs)      || 0,
+            streamingCalls:   Number(raw.streamingCalls)   || 0,
+          });
+        }
+      }
+      console.log(`[stats] loaded ${statsMap.size} backend(s) from ${STATS_FILE}`);
+    }
+  } catch {
+    console.warn(`[stats] could not load ${STATS_FILE}, starting fresh`);
   }
+})();
+
+// ── Stat accessors ─────────────────────────────────────────────────────────
+
+function getStat(label: string): BackendStat {
+  if (!statsMap.has(label)) statsMap.set(label, EMPTY_STAT());
   return statsMap.get(label)!;
 }
 
@@ -318,9 +371,10 @@ function recordCallStat(label: string, durationMs: number, prompt: number, compl
   s.completionTokens += completion;
   s.totalDurationMs += durationMs;
   if (ttftMs !== undefined) { s.totalTtftMs += ttftMs; s.streamingCalls++; }
+  scheduleSave();
 }
 
-function recordErrorStat(label: string): void { getStat(label).errors++; }
+function recordErrorStat(label: string): void { getStat(label).errors++; scheduleSave(); }
 
 // ---------------------------------------------------------------------------
 // Helpers
