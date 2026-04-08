@@ -1,6 +1,6 @@
 {
-  "version": "1.1.5",
+  "version": "1.1.6",
   "name": "Replit2Api",
-  "releaseDate": "2026-04-07",
-  "releaseNotes": "v1.1.5 — 子节点优先路由，健康检查误标红修复，配置助手提示词改用编程接口"
+  "releaseDate": "2026-04-08",
+  "releaseNotes": "v1.1.6 — 假流式开关，持久化竞态修复，所有设置在服务启动前加载完成"
 }

@@ -258,6 +258,16 @@ function PageHome({
         {(() => {
           const releases = [
             {
+              version: "v1.1.6",
+              date: "2026-04-08",
+              items: [
+                { zh: "假流式支持：后端不支持流式或流式请求失败时，自动将完整 JSON 响应拆分为 SSE 流式输出，模拟逐字输出效果", en: "Fake streaming: when backends return JSON for stream requests or real streaming fails, automatically converts to SSE chunks with typewriter effect" },
+                { zh: "假流式开关：路由策略面板新增「假流式」开关，可独立启用/关闭，支持 API 控制和持久化", en: "Fake stream toggle: new switch in routing settings panel, controllable via API and persisted across restarts" },
+                { zh: "持久化竞态修复：路由设置、动态节点、禁用模型、统计数据全部在服务器启动前加载完成，彻底消除刷新页面后设置重置的问题", en: "Persistence race fix: routing settings, dynamic backends, disabled models, and stats are all loaded before server accepts requests — eliminates settings reset on page refresh" },
+                { zh: "写入错误不再静默吞掉，所有持久化失败均输出日志以便排查", en: "Write errors are no longer silently swallowed — all persistence failures are logged for debugging" },
+              ],
+            },
+            {
               version: "v1.1.5",
               date: "2026-04-07",
               items: [

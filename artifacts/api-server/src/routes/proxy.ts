@@ -84,14 +84,10 @@ interface DynamicBackend { label: string; url: string; enabled?: boolean }
 
 let dynamicBackends: DynamicBackend[] = [];
 
-// Async bootstrap — load persisted data from GCS (or local file) on startup
-(async () => {
-  const saved = await readJson<DynamicBackend[]>("dynamic_backends.json");
-  if (Array.isArray(saved)) dynamicBackends = saved;
-})();
-
 function saveDynamicBackends(list: DynamicBackend[]): void {
-  writeJson("dynamic_backends.json", list).catch(() => {});
+  writeJson("dynamic_backends.json", list).catch((err) => {
+    console.error("[persist] failed to save dynamic_backends:", err);
+  });
 }
 
 // ---------------------------------------------------------------------------
@@ -119,30 +115,41 @@ for (const id of OPENROUTER_FEATURED) { MODEL_PROVIDER_MAP.set(id, "openrouter")
 
 let disabledModels: Set<string> = new Set<string>();
 
-// Async bootstrap for disabled models
-(async () => {
-  const saved = await readJson<string[]>("disabled_models.json");
-  if (Array.isArray(saved)) disabledModels = new Set<string>(saved);
-})();
-
 function saveDisabledModels(set: Set<string>): void {
-  writeJson("disabled_models.json", [...set]).catch(() => {});
+  writeJson("disabled_models.json", [...set]).catch((err) => {
+    console.error("[persist] failed to save disabled_models:", err);
+  });
 }
 
 interface RoutingSettings { localEnabled: boolean; localFallback: boolean; fakeStream: boolean }
 let routingSettings: RoutingSettings = { localEnabled: true, localFallback: true, fakeStream: true };
 
-(async () => {
-  const saved = await readJson<Partial<RoutingSettings>>("routing_settings.json");
-  if (saved && typeof saved === "object") {
-    if (typeof saved.localEnabled === "boolean") routingSettings.localEnabled = saved.localEnabled;
-    if (typeof saved.localFallback === "boolean") routingSettings.localFallback = saved.localFallback;
-    if (typeof saved.fakeStream === "boolean") routingSettings.fakeStream = saved.fakeStream;
+export const initReady: Promise<void> = (async () => {
+  const [savedBackends, savedDisabled, savedRouting] = await Promise.all([
+    readJson<DynamicBackend[]>("dynamic_backends.json").catch(() => null),
+    readJson<string[]>("disabled_models.json").catch(() => null),
+    readJson<Partial<RoutingSettings>>("routing_settings.json").catch(() => null),
+  ]);
+  if (Array.isArray(savedBackends)) {
+    dynamicBackends = savedBackends;
+    console.log(`[init] loaded ${dynamicBackends.length} dynamic backend(s)`);
   }
+  if (Array.isArray(savedDisabled)) {
+    disabledModels = new Set<string>(savedDisabled);
+    console.log(`[init] loaded ${disabledModels.size} disabled model(s)`);
+  }
+  if (savedRouting && typeof savedRouting === "object") {
+    if (typeof savedRouting.localEnabled === "boolean") routingSettings.localEnabled = savedRouting.localEnabled;
+    if (typeof savedRouting.localFallback === "boolean") routingSettings.localFallback = savedRouting.localFallback;
+    if (typeof savedRouting.fakeStream === "boolean") routingSettings.fakeStream = savedRouting.fakeStream;
+  }
+  console.log("[init] routing settings:", JSON.stringify(routingSettings));
 })();
 
 function saveRoutingSettings(): void {
-  writeJson("routing_settings.json", routingSettings).catch(() => {});
+  writeJson("routing_settings.json", routingSettings).catch((err) => {
+    console.error("[routing] failed to save settings:", err);
+  });
 }
 
 function isModelEnabled(id: string): boolean {
@@ -373,8 +380,7 @@ for (const sig of ["SIGTERM", "SIGINT"] as const) {
   });
 }
 
-// Load persisted stats at startup.
-(async () => {
+export const statsReady: Promise<void> = (async () => {
   try {
     const saved = await readJson<Record<string, BackendStat>>(STATS_FILE);
     if (saved && typeof saved === "object") {
