@@ -541,8 +541,8 @@ function PageStats({
   onToggleBackend: (label: string, enabled: boolean) => void;
   onBatchToggle: (labels: string[], enabled: boolean) => void;
   onBatchRemove: (labels: string[]) => void;
-  routing: { localEnabled: boolean; localFallback: boolean };
-  onToggleRouting: (field: "localEnabled" | "localFallback", value: boolean) => void;
+  routing: { localEnabled: boolean; localFallback: boolean; fakeStream: boolean };
+  onToggleRouting: (field: "localEnabled" | "localFallback" | "fakeStream", value: boolean) => void;
 }) {
   const _ = baseUrl; // used by parent
   const [selected, setSelected] = useState<Set<string>>(new Set());
@@ -698,6 +698,7 @@ function PageStats({
             {([
               { field: "localEnabled" as const, label: "启用本地账号", desc: "关闭后，本地账号完全停用，所有请求只走子节点" },
               { field: "localFallback" as const, label: "主号兜底", desc: "关闭后，即使所有子节点离线也不会调用本地账号（返回 503）" },
+              { field: "fakeStream" as const, label: "假流式", desc: "开启后，当后端不支持或流式失败时，将完整响应模拟为 SSE 流式输出" },
             ]).map(({ field, label, desc }) => (
               <div key={field} style={{
                 display: "flex", alignItems: "center", justifyContent: "space-between",
@@ -1718,7 +1719,7 @@ export default function App() {
   });
   const [stats, setStats] = useState<Record<string, { calls: number; errors: number; promptTokens: number; completionTokens: number; totalTokens: number; avgDurationMs: number; avgTtftMs: number | null; health: string; url?: string; dynamic?: boolean; enabled?: boolean }> | null>(null);
   const [statsError, setStatsError] = useState<false | "auth" | "server">(false);
-  const [routing, setRouting] = useState<{ localEnabled: boolean; localFallback: boolean }>({ localEnabled: true, localFallback: true });
+  const [routing, setRouting] = useState<{ localEnabled: boolean; localFallback: boolean; fakeStream: boolean }>({ localEnabled: true, localFallback: true, fakeStream: true });
   const [addUrl, setAddUrl] = useState("");
   const [addState, setAddState] = useState<"idle" | "loading" | "ok" | "err">("idle");
   const [addMsg, setAddMsg] = useState("");
@@ -1819,7 +1820,7 @@ export default function App() {
     fetchStats(apiKey);
   };
 
-  const toggleRouting = async (field: "localEnabled" | "localFallback", value: boolean) => {
+  const toggleRouting = async (field: "localEnabled" | "localFallback" | "fakeStream", value: boolean) => {
     setRouting((prev) => ({ ...prev, [field]: value }));
     try {
       await fetch(`${baseUrl}/api/v1/admin/routing`, {

@@ -129,12 +129,16 @@ function saveDisabledModels(set: Set<string>): void {
   writeJson("disabled_models.json", [...set]).catch(() => {});
 }
 
-interface RoutingSettings { localEnabled: boolean; localFallback: boolean }
-let routingSettings: RoutingSettings = { localEnabled: true, localFallback: true };
+interface RoutingSettings { localEnabled: boolean; localFallback: boolean; fakeStream: boolean }
+let routingSettings: RoutingSettings = { localEnabled: true, localFallback: true, fakeStream: true };
 
 (async () => {
-  const saved = await readJson<RoutingSettings>("routing_settings.json");
-  if (saved && typeof saved.localEnabled === "boolean") routingSettings = saved;
+  const saved = await readJson<Partial<RoutingSettings>>("routing_settings.json");
+  if (saved && typeof saved === "object") {
+    if (typeof saved.localEnabled === "boolean") routingSettings.localEnabled = saved.localEnabled;
+    if (typeof saved.localFallback === "boolean") routingSettings.localFallback = saved.localFallback;
+    if (typeof saved.fakeStream === "boolean") routingSettings.fakeStream = saved.fakeStream;
+  }
 })();
 
 function saveRoutingSettings(): void {
@@ -982,9 +986,10 @@ router.get("/v1/admin/routing", requireApiKey, (_req: Request, res: Response) =>
 });
 
 router.patch("/v1/admin/routing", requireApiKey, (req: Request, res: Response) => {
-  const { localEnabled, localFallback } = req.body as Partial<RoutingSettings>;
+  const { localEnabled, localFallback, fakeStream } = req.body as Partial<RoutingSettings>;
   if (typeof localEnabled === "boolean") routingSettings.localEnabled = localEnabled;
   if (typeof localFallback === "boolean") routingSettings.localFallback = localFallback;
+  if (typeof fakeStream === "boolean") routingSettings.fakeStream = fakeStream;
   saveRoutingSettings();
   res.json(routingSettings);
 });
@@ -1112,7 +1117,7 @@ async function handleFriendProxy({
   }
 
   const contentType = fetchRes.headers.get("content-type") ?? "";
-  if (contentType.includes("application/json")) {
+  if (contentType.includes("application/json") && routingSettings.fakeStream) {
     req.log.info("Friend returned JSON for stream request — fake-streaming");
     const json = await fetchRes.json() as Record<string, unknown>;
     const result = await fakeStreamResponse(res, json, startTime);
@@ -1248,7 +1253,7 @@ async function handleOpenAI({
       res.end();
       return { promptTokens, completionTokens, ttftMs };
     } catch (streamErr) {
-      if (res.headersSent) throw streamErr;
+      if (res.headersSent || !routingSettings.fakeStream) throw streamErr;
       req.log.warn({ err: streamErr }, "Real streaming failed, falling back to fake-stream");
       const result = await client.chat.completions.create({ ...params, stream: false });
       return fakeStreamResponse(res, result as unknown as Record<string, unknown>, startTime);
@@ -1350,7 +1355,7 @@ async function handleGemini({
       res.end();
       return { promptTokens, completionTokens, ttftMs };
     } catch (streamErr) {
-      if (res.headersSent) throw streamErr;
+      if (res.headersSent || !routingSettings.fakeStream) throw streamErr;
       req.log.warn({ err: streamErr }, "Gemini streaming failed, falling back to fake-stream");
       const response = await client.models.generateContent({
         model, contents,
