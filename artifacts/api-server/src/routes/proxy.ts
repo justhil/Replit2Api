@@ -1660,7 +1660,8 @@ async function handleClaude({
           const delta = event.delta;
 
           if (delta.type === "thinking_delta") {
-            writeAndFlush(res, `data: ${JSON.stringify({ id: msgId, object: "chat.completion.chunk", created: Math.floor(Date.now() / 1000), model, choices: [{ index: 0, delta: { content: delta.thinking }, finish_reason: null }] })}\n\n`);
+            const cleaned = delta.thinking.replace(/<\/?think>/g, "");
+            if (cleaned) writeAndFlush(res, `data: ${JSON.stringify({ id: msgId, object: "chat.completion.chunk", created: Math.floor(Date.now() / 1000), model, choices: [{ index: 0, delta: { content: cleaned }, finish_reason: null }] })}\n\n`);
           } else if (delta.type === "text_delta") {
             if (ttftMs === undefined) ttftMs = Date.now() - startTime;
             writeAndFlush(res, `data: ${JSON.stringify({ id: msgId, object: "chat.completion.chunk", created: Math.floor(Date.now() / 1000), model, choices: [{ index: 0, delta: { content: delta.text }, finish_reason: null }] })}\n\n`);
@@ -1708,7 +1709,8 @@ async function handleClaude({
 
     for (const block of result.content) {
       if (block.type === "thinking") {
-        textParts.push(`<thinking>\n${(block as { type: "thinking"; thinking: string }).thinking}\n</thinking>`);
+        const rawThinking = (block as { type: "thinking"; thinking: string }).thinking.replace(/<\/?think>/g, "");
+        textParts.push(`<thinking>\n${rawThinking}\n</thinking>`);
       } else if (block.type === "text") {
         textParts.push((block as { type: "text"; text: string }).text);
       } else if (block.type === "tool_use") {
