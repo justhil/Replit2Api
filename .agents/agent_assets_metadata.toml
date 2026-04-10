@@ -2,22 +2,16 @@ uploads = []
 generated = []
 
 [[outputs]]
-id = "4_PvS9t6JZ6H8xwpSROgJ"
-uri = "file://docs/friend-proxy-build-prompt-and-tutorial.md"
+id = "fI22sIfeNlJ1hOvuuYtBB"
+uri = "file://docs/build-prompt.md"
 type = "text"
-title = "朋友节点完整部署文档"
+title = "AI Proxy Gateway — 完整构建提示词文档 v6"
 
 [[outputs]]
 id = "jAsX3tC9Osw1AyGZPLqEn"
 uri = "file://docs/troubleshooting.md"
 type = "text"
 title = "常见问题排查指南（含 413 / 404 / 500）"
-
-[[outputs]]
-id = "fI22sIfeNlJ1hOvuuYtBB"
-uri = "file://docs/build-prompt.md"
-type = "text"
-title = "AI Proxy Gateway — 完整构建提示词文档 v5"
 
 [[outputs]]
 id = "63dnl9SJDBXA4zwY26m96"
